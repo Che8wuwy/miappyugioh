@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiAppYuGiOh! · Guía de instalación</title>
+<style>
+  body { font-family: system-ui, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 1.5rem; color: #1c1c1e; line-height: 1.55; background: #fafafa; }
+  h1 { color: #7c3aed; margin-bottom: .2rem; }
+  h2 { border-bottom: 3px solid #7c3aed; padding-bottom: .3rem; margin-top: 2.2rem; }
+  .paso { background: #fff; border: 1px solid #e3e3e6; border-radius: 12px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  .paso b.n { display: inline-block; background: #7c3aed; color: #fff; border-radius: 50%; width: 1.7rem; height: 1.7rem; text-align: center; line-height: 1.7rem; margin-right: .4rem; }
+  code { background: #f0f0f2; padding: .1rem .35rem; border-radius: 5px; font-size: .95em; }
+  .ojo { background: #fff4e6; border-left: 5px solid #7c3aed; padding: .7rem 1rem; border-radius: 6px; }
+  .ok { background: #ecfdf3; border-left: 5px solid #16a34a; padding: .7rem 1rem; border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; }
+  td, th { border: 1px solid #e3e3e6; padding: .5rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f6f6f7; }
+</style>
+</head>
+<body>
+<h1>MiAppYuGiOh!</h1>
+<p>Guía para publicar la app en GitHub Pages e instalarla en el celular. Versión 1.0.0.</p>
+
+<h2>1. Publicar en GitHub (una sola vez)</h2>
+
+<div class="paso"><b class="n">1</b><b>Crea tu cuenta</b> en <code>github.com/signup</code> (gratis). Confirma tu correo.</div>
+
+<div class="paso"><b class="n">2</b><b>Crea un repositorio:</b> botón verde <b>New</b> (o “+” arriba a la derecha → <i>New repository</i>).
+  <ul>
+    <li>Repository name: <code>miappyugioh</code></li>
+    <li>Visibilidad: <b>Public</b> (GitHub Pages gratis lo requiere).</li>
+    <li>Marca <b>Add a README file</b> y da clic en <b>Create repository</b>.</li>
+  </ul>
+  <div class="ojo">Que sea público solo muestra el <b>código</b> de la app. Tus colecciones y códigos <b>nunca</b> se suben: viven únicamente en tu celular.</div>
+</div>
+
+<div class="paso"><b class="n">3</b><b>Sube los archivos:</b> dentro del repositorio, <b>Add file → Upload files</b>.
+  Abre la carpeta <code>MiAppYuGiOh!</code> en tu PC, selecciona <b>todo su contenido</b> (<code>index.html</code>, <code>sw.js</code>, <code>manifest.webmanifest</code> y las carpetas <code>css</code>, <code>js</code>, <code>icons</code>, <code>vendor</code>, <code>docs</code>) y arrástralo a la página. Espera a que termine y da clic en <b>Commit changes</b>.
+  <div class="ojo">Arrastra el <b>contenido</b>, no la carpeta <code>MiAppYuGiOh!</code> completa. <code>index.html</code> debe quedar en la raíz del repositorio.</div>
+</div>
+
+<div class="paso"><b class="n">4</b><b>Activa GitHub Pages:</b> <b>Settings → Pages</b>. En <i>Build and deployment</i>: Source = <b>Deploy from a branch</b>, Branch = <b>main</b> y carpeta <b>/ (root)</b>. Da clic en <b>Save</b>.
+  En 1 o 2 minutos aparece arriba la dirección: <code>https://TU-USUARIO.github.io/miappyugioh/</code></div>
+
+<h2>2. Instalar en el celular</h2>
+
+<div class="paso"><b class="n">5</b>Con internet, abre esa dirección en <b>Chrome</b> del celular.</div>
+<div class="paso"><b class="n">6</b>Entra una vez a <b>Capturar código</b>: acepta el permiso de la <b>cámara</b> y espera a que diga <i>“Lector listo”</i>. Así queda descargado todo para usarse sin internet.</div>
+<div class="paso"><b class="n">7</b>Menú de Chrome (⋮) → <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>. Aparece el ícono de MiAppYuGiOh!.</div>
+<div class="paso"><b class="n">8</b><b>Prueba sin internet:</b> pon el celular en modo avión y abre la app desde el ícono. Debe funcionar igual.</div>
+
+<div class="ok">Listo. Desde aquí ya no necesitas internet para capturar, consultar ni exportar.</div>
+
+<h2>3. Uso diario</h2>
+<div class="paso"><b class="n">A</b><b>Primero descarga el catálogo</b> (con Wi-Fi): menú <b>Catálogo → Descargar / actualizar catálogo</b>. Es un archivo grande con todas las cartas OCG y TCG; tarda unos minutos y luego funciona sin internet. Repítelo cuando salgan sets nuevos.</div>
+<table>
+  <tr><th>Pantalla</th><th>Qué hace</th></tr>
+  <tr><td>Escanear carta</td><td>Encuadra la carta completa en el marco y toca <b>Escanear carta</b>. La app lee Card Number, passcode, edición, ATK/DEF, nombre y adivina el atributo por color; luego busca la carta en el catálogo y llena el resto. Tú revisas, eliges la <b>rareza</b> y tocas <b>Guardar</b>: <b style="color:#16a34a">verde</b> si es nueva, <b style="color:#dc2626">rojo</b> si ya la tienes (mismo Card Number + Edición + Rareza).</td></tr>
+  <tr><td>Inventario</td><td>Buscar por nombre, Card Number o passcode; filtrar por TCG/OCG, tipo y atributo; tocar una carta para editarla o eliminarla; descargar CSV.</td></tr>
+  <tr><td>Catálogo</td><td>Descargar/actualizar y probar búsquedas.</td></tr>
+  <tr><td>Configuración</td><td>Modo oscuro, color, letra, buscar en línea (YGOPRODeck), vibración, respaldo y acerca de.</td></tr>
+</table>
+<div class="ojo"><b>Sobre el escaneo:</b> lo más confiable es el <b>Card Number</b>; con él la app trae todo del catálogo. Usa buena luz, evita reflejos (sobre todo en cartas foil), usa el zoom y toca para enfocar. La <b>rareza</b> siempre la eliges tú: la cámara no distingue los brillos. Puedes capturar todo a mano con <b>Capturar a mano</b>.</div>
+<div class="ojo"><b>Respaldo:</b> tu inventario vive solo en el celular. Usa <b>Configuración → Exportar respaldo</b> de vez en cuando y guarda el archivo en Drive o en tu PC.</div>
+
+<h2>4. Publicar una actualización</h2>
+<ol>
+  <li>Cambia la versión en <code>js/config.js</code> (<code>APP_VERSION</code>) y en <code>sw.js</code> (<code>CACHE_VERSION</code>). Si agregaste archivos nuevos, agrégalos a la lista de <code>sw.js</code>.</li>
+  <li>En GitHub: <b>Add file → Upload files</b> y sube los archivos modificados con la misma ruta (los reemplaza).</li>
+  <li>En el celular, abre la app con internet: se actualiza sola y se recarga. Tus datos no se tocan.</li>
+</ol>
+
+<h2>5. Seguridad</h2>
+<ul>
+  <li>No hay servidor ni base de datos en internet: tu inventario no sale del celular.</li>
+  <li>La app solo se conecta a dos sitios, y solo cuando tú lo pides: YAML Yugi (descargar catálogo) y YGOPRODeck (buscar una carta en línea, se envía solo el Card Number o passcode). La política de seguridad (CSP) bloquea todo lo demás.</li>
+  <li>Los datos quedan aislados en el almacenamiento de Chrome para esa dirección; otras apps y páginas no pueden leerlos.</li>
+  <li>La cámara solo está encendida en la pantalla Capturar; se apaga al salir o cambiar de app.</li>
+  <li>Los respaldos importados se validan campo por campo y el CSV se protege contra fórmulas maliciosas en Excel.</li>
+  <li>Cuida tu cuenta de GitHub (activa la verificación en dos pasos): quien la controle podría cambiar el código de la app.</li>
+</ul>
+</body>
+</html>
