@@ -37,16 +37,48 @@ function aFormulario(r, cardNumber) {
 
 export async function buscarPorNumero(cardNumber) {
   const k = claveNumero(cardNumber);
-  if (!k) return null;
-  const r = await db.buscarIndice('catalogo', 'numeros', k);
-  return r ? aFormulario(r, cardNumber) : null;
+  if (k.length < 4) return null;
+  // Exacto; si no, prueba quitando 1 o 2 caracteres del inicio (el lector a veces agrega basura del borde)
+  for (const cand of [k, k.slice(1), k.slice(2)]) {
+    if (cand.length < 4) break;
+    const r = await db.buscarIndice('catalogo', 'numeros', cand);
+    if (r) {
+      const imp = r.impresiones.find((i) => claveNumero(i.n) === cand);
+      return { ...aFormulario(r, imp?.n || cardNumber), cardNumber: imp?.n || cardNumber };
+    }
+  }
+  return null;
 }
 
-export async function buscarPorPasscode(passcode) {
+function distancia(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  }
+  return d[a.length][b.length];
+}
+
+/**
+ * Busca por passcode. Si además se leyó un Card Number (aunque con errores),
+ * elige la impresión del catálogo más parecida y corrige el Card Number.
+ */
+export async function buscarPorPasscode(passcode, numeroLeido = '') {
   const p = String(passcode || '').replace(/\D/g, '').padStart(8, '0');
   if (!/^\d{8}$/.test(p) || p === '00000000') return null;
   const r = await db.buscarIndice('catalogo', 'passcode', p);
-  return r ? aFormulario(r, '') : null;
+  if (!r) return null;
+  const k = claveNumero(numeroLeido);
+  // Opciones de Card Number de esta carta, de la más parecida a lo leído a la menos
+  const opciones = r.impresiones
+    .map((i) => ({ n: i.n, s: i.s, r: i.r, d: k ? distancia(k, claveNumero(i.n)) : 0 }))
+    .sort((a, b) => a.d - b.d);
+  const vistas = new Set();
+  const opcionesNumero = opciones.filter((o) => !vistas.has(o.n) && vistas.add(o.n)).slice(0, 20);
+  if (k && opciones.length && opciones[0].d <= 3) {
+    return { ...aFormulario(r, opciones[0].n), cardNumber: opciones[0].n, opcionesNumero };
+  }
+  return { ...aFormulario(r, ''), opcionesNumero };
 }
 
 // ---------- Respaldo en línea (YGOPRODeck, solo TCG) ----------

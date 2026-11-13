@@ -100,13 +100,15 @@ export function recortarGuia(video, guia) {
 // ---------- Zonas de la carta (proporciones del formato actual) ----------
 // x, y, ancho, alto como fracción de la carta. Ajustables aquí si hace falta.
 export const ZONAS = {
-  nombre:       { x: 0.06, y: 0.035, w: 0.74, h: 0.065 },
-  atributo:     { x: 0.815, y: 0.04, w: 0.12, h: 0.075 },
-  numero:       { x: 0.55, y: 0.722, w: 0.41, h: 0.045 }, // bajo la imagen, a la derecha
-  numeroPend:   { x: 0.04, y: 0.900, w: 0.42, h: 0.040 }, // Péndulo: abajo a la izquierda
-  edicionVieja: { x: 0.05, y: 0.722, w: 0.42, h: 0.045 }, // formato antiguo: bajo la imagen, izquierda
-  pie:          { x: 0.02, y: 0.935, w: 0.62, h: 0.050 }, // passcode + edición (formato actual)
-  atkdef:       { x: 0.45, y: 0.895, w: 0.52, h: 0.045 },
+  nombre:       { x: 0.05, y: 0.030, w: 0.76, h: 0.065 },
+  atributo:     { x: 0.80, y: 0.030, w: 0.14, h: 0.075 },
+  numero:       { x: 0.48, y: 0.684, w: 0.50, h: 0.044 }, // bajo la imagen, a la derecha
+  numeroPend:   { x: 0.03, y: 0.900, w: 0.42, h: 0.040 }, // Péndulo: abajo a la izquierda
+  edicionVieja: { x: 0.04, y: 0.684, w: 0.42, h: 0.044 }, // formato antiguo: bajo la imagen, izquierda
+  passcode:     { x: 0.00, y: 0.945, w: 0.30, h: 0.045 }, // 8 dígitos, abajo a la izquierda
+  pie:          { x: 0.00, y: 0.945, w: 0.60, h: 0.045 }, // passcode + edición (formato actual)
+  atkdef:       { x: 0.45, y: 0.900, w: 0.53, h: 0.045 },
+  abajo:        { x: 0.00, y: 0.875, w: 1.00, h: 0.125 }, // ATK/DEF + passcode + edición
 };
 
 function recortarZona(carta, z, escala = 3) {
@@ -118,14 +120,14 @@ function recortarZona(carta, z, escala = 3) {
   ctx.filter = 'grayscale(1) contrast(1.4)';
   ctx.drawImage(carta, sx, sy, sw, sh, 0, 0, c.width, c.height);
   ctx.filter = 'none';
-  return [conBorde(c), conBorde(soloOscuro(c)), conBorde(binarizar(c))];
+  return [conBorde(c), conBorde(soloOscuro(c, 1.15)), conBorde(soloOscuro(c)), conBorde(binarizar(c))];
 }
 
 /**
  * Deja en negro solo lo más oscuro (la tinta) y en blanco todo lo demás.
  * Funciona aunque el fondo sea de color (marco café, naranja, morado…).
  */
-function soloOscuro(origen) {
+function soloOscuro(origen, factor = 1) {
   const c = document.createElement('canvas'); c.width = origen.width; c.height = origen.height;
   const ctx = c.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(origen, 0, 0);
@@ -133,7 +135,7 @@ function soloOscuro(origen) {
   const hist = new Array(256).fill(0), n = d.length / 4;
   for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
   const percentil = (p) => { let a = 0; for (let i = 0; i < 256; i++) { a += hist[i]; if (a >= n * p) return i; } return 255; };
-  const umbral = (percentil(0.01) + percentil(0.5)) / 2;
+  const umbral = ((percentil(0.01) + percentil(0.5)) / 2) * factor;
   for (let i = 0; i < d.length; i += 4) { const v = d[i] > umbral ? 255 : 0; d[i] = d[i + 1] = d[i + 2] = v; }
   // Borra filas y columnas casi totalmente negras (bordes del marco, no texto)
   const W = c.width, H = c.height;
@@ -212,17 +214,33 @@ const LETRAS_NUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
 /** Busca algo con forma de Card Number (ej. LOB-EN001, SD1-JP005, RA05-EN013). */
 export function extraerNumero(t) {
   const s = String(t || '').toUpperCase().replace(/\s+/g, '');
-  // En la parte numérica, el lector a veces confunde 0 con O e 1 con I/L
-  const m = s.match(/([A-Z0-9]{2,5})-?([A-Z]{1,2})?([0-9OIL]{3}[A-Z]?)(?![0-9])/);
-  if (!m || !/\d/.test(m[3])) return '';
-  const num = m[3].slice(0, 3).replace(/O/g, '0').replace(/[IL]/g, '1') + m[3].slice(3);
+  // En la parte numérica, el lector a veces confunde 0/O, 1/I/L, 5/S, 2/Z, 8/B
+  const m = s.match(/([A-Z0-9]{2,5})-?([A-Z]{1,2})?([0-9OILSZB]{3}[A-Z]?)(?![0-9])/);
+  if (!m || !/\d/.test(m[3]) || !/[A-Z]/.test(m[1] + (m[2] || ''))) return '';
+  const num = m[3].slice(0, 3).replace(/O/g, '0').replace(/[IL]/g, '1').replace(/S/g, '5').replace(/Z/g, '2').replace(/B/g, '8') + m[3].slice(3);
   return `${m[1]}-${m[2] || ''}${num}`;
+}
+
+const REGIONES = ['EN', 'JP', 'AE', 'KR', 'DE', 'FR', 'IT', 'PT', 'SP', 'JA', 'TC', 'SC'];
+
+/** Qué tanto se parece un texto a un Card Number bien leído (0 a 4). */
+function puntajeNumero(t) {
+  const s = String(t || '').toUpperCase().replace(/\s+/g, '');
+  const n = extraerNumero(s);
+  if (!n) return 0;
+  let p = 1;
+  const m = n.match(/^([A-Z0-9]+)-([A-Z]*)(\d{3})/);
+  if (m && REGIONES.includes(m[2])) p++;
+  if (m && m[1].length >= 2 && m[1].length <= 4 && /[A-Z]/.test(m[1])) p++;
+  if (/[A-Z0-9]{2,5}-[A-Z]{2}\d{3}/.test(s)) p++; // el guion se leyó en su lugar
+  return p;
 }
 
 function extraerEdicion(t) {
   const s = String(t || '').toUpperCase();
   if (/LIMITED/.test(s)) return 'Limited Edition';
-  if (/1\s*(ST|A|º|ª)?\s*(ED|EDITION|EDICI)/.test(s) || /\b1ST\b/.test(s)) return '1st Edition';
+  // En el formato actual, solo la 1st Edition lleva texto de edición junto al passcode
+  if (/1\s*(ST|A|º|ª)?\s*(ED|EDITION|EDICI)/.test(s) || /\b1ST\b/.test(s) || /[DE]ITION|EDICI/.test(s)) return '1st Edition';
   return '';
 }
 
@@ -233,35 +251,49 @@ function extraerEdicion(t) {
 export async function leerCarta(carta, onPaso) {
   const w = await prepararOCR();
   const res = { cardNumber: '', passcode: '', edicion: '', atk: '', def: '', nombreEn: '', atributo: '' };
+  let t;
 
-  onPaso?.('Leyendo Card Number…');
-  let t = await leerZona(w, recortarZona(carta, ZONAS.numero), LETRAS_NUM, (x) => !!extraerNumero(x));
-  res.cardNumber = extraerNumero(t);
-  if (!res.cardNumber) {
-    t = await leerZona(w, recortarZona(carta, ZONAS.numeroPend), LETRAS_NUM, (x) => !!extraerNumero(x));
-    res.cardNumber = extraerNumero(t);
+  // 1) Card Number: se barre una franja angosta bajo la imagen, de arriba hacia abajo,
+  //    porque su altura exacta cambia según cómo se encuadre la carta.
+  onPaso?.('Buscando el Card Number…');
+  const candidatos = [];
+  for (let y = ZONAS.numero.y - 0.03; y <= ZONAS.numero.y + 0.05; y += 0.012) {
+    const z = { ...ZONAS.numero, y, h: 0.038 };
+    t = await leerZona(w, recortarZona(carta, z).slice(0, 2), LETRAS_NUM, (x) => puntajeNumero(x) >= 3);
+    const n = extraerNumero(t);
+    if (n) candidatos.push({ n, p: puntajeNumero(t) });
+    if (candidatos.some((c) => c.p >= 4)) break; // ya hay uno con forma perfecta
   }
+  if (!candidatos.length) { // Péndulo: abajo a la izquierda
+    t = await leerZona(w, recortarZona(carta, ZONAS.numeroPend), LETRAS_NUM, (x) => !!extraerNumero(x));
+    const n = extraerNumero(t);
+    if (n) candidatos.push({ n, p: puntajeNumero(t) });
+  }
+  candidatos.sort((a, b) => b.p - a.p);
+  res.candidatos = [...new Set(candidatos.map((c) => c.n))];
+  res.cardNumber = res.candidatos[0] || '';
 
-  onPaso?.('Leyendo passcode y edición…');
-  const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ªº ';
-  const pie = recortarZona(carta, ZONAS.pie);
-  t = await leerZona(w, pie, '0123456789 ', (x) => /\d{8}/.test(x.replace(/ /g, '')));
-  const pc = t.replace(/ /g, '').match(/\d{8}/);
+  // 2) Parte de abajo completa: ATK/DEF, passcode y edición en una sola lectura de bloque
+  onPaso?.('Leyendo passcode, edición y ATK/DEF…');
+  const okPie = (x) => /\d{8}/.test(x);
+  t = (await leerZona(w, recortarZona(carta, ZONAS.abajo, 2), '', okPie, '6')).toUpperCase();
+  const pc = t.match(/\d{8}/);
   if (pc) res.passcode = pc[0];
-  t = await leerZona(w, pie, letras, (x) => !!extraerEdicion(x));
-  res.edicion = extraerEdicion(t);
-  if (!res.edicion) {
-    t = await leerZona(w, recortarZona(carta, ZONAS.edicionVieja), letras, (x) => !!extraerEdicion(x));
+  res.edicion = extraerEdicion(t.replace(pc ? pc[0] : '', ''));
+  const a = t.match(/ATK\s*\/?\s*([\d?]{1,4})/), d = t.match(/DEF\s*\/?\s*([\d?]{1,4})/);
+  if (a) res.atk = a[1];
+  if (d) res.def = d[1];
+  if (!res.passcode) {
+    t = await leerZona(w, recortarZona(carta, ZONAS.passcode), '0123456789', (x) => /\d{8}/.test(x.replace(/ /g, '')));
+    const p2 = t.replace(/ /g, '').match(/\d{8}/);
+    if (p2) res.passcode = p2[0];
+  }
+  if (!res.edicion) { // formato antiguo: bajo la imagen, a la izquierda
+    t = await leerZona(w, recortarZona(carta, ZONAS.edicionVieja), 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ', (x) => !!extraerEdicion(x));
     res.edicion = extraerEdicion(t);
   }
 
-  onPaso?.('Leyendo ATK/DEF…');
-  const atkOk = (x) => /ATK\s*\/?\s*[\d?]{1,5}/i.test(x) && /DEF\s*\/?\s*[\d?]{1,5}/i.test(x);
-  t = (await leerZona(w, recortarZona(carta, ZONAS.atkdef), 'ATKDEFLIN0123456789?/- ', atkOk)).toUpperCase();
-  const a = t.match(/ATK\s*\/?\s*([\d?]{1,5})/), d = t.match(/DEF\s*\/?\s*([\d?]{1,5})/);
-  if (a) res.atk = a[1];
-  if (d) res.def = d[1];
-
+  // 3) Nombre (respaldo por si la carta no está en el catálogo)
   onPaso?.('Leyendo nombre…');
   res.nombreEn = (await leerZona(w, recortarZona(carta, ZONAS.nombre, 2), '', (x) => x.length > 2)).replace(/[^\w\s'".,:&!?-]/g, '').trim();
 

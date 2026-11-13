@@ -3,7 +3,7 @@ import { agregarCarta } from '../core/repo.js';
 import { formularioCarta } from '../core/formCarta.js';
 import { abrirCamara, cerrarCamara, recortarGuia, leerCarta, prepararOCR, capacidades, ponerZoom, ponerLinterna, enfocarEn } from '../ocr/escaner.js';
 import { ajustes } from '../core/tema.js';
-import { infoCatalogo } from '../core/catalogo.js';
+import { infoCatalogo, buscarPorNumero } from '../core/catalogo.js';
 import { ir } from '../app.js';
 
 export const titulo = 'Escanear carta';
@@ -117,6 +117,10 @@ export async function render(cont) {
         nombreEn: leido.nombreEn, atk: leido.atk, def: leido.def, atributo: leido.atributo,
         tipo: leido.atributo === 'SPELL' ? 'Mágica' : leido.atributo === 'TRAP' ? 'Trampa' : (leido.atributo ? 'Monstruo' : ''),
       }, 'camara');
+      // Prueba cada Card Number candidato en el catálogo antes de buscar por passcode
+      for (const cand of leido.candidatos || []) {
+        if (await buscarPorNumero(cand)) { f.llenar({ cardNumber: cand }); break; }
+      }
       const r = await f.buscar({ silencioso: true });
       if (r) origen = r.origen;
       else f.setEstado('No se encontró en el catálogo. Lo leído por la cámara puede tener errores: revisa todo.');

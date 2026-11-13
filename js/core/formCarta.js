@@ -3,7 +3,7 @@
 import { h, toast } from './ui.js';
 import { EDICIONES, RAREZAS, TIPOS_CARTA } from '../config.js';
 import { ATRIBUTOS, iconoAtributo, tipoDesdeAtributo } from './atributos.js';
-import { juegoDesdeNumero } from './repo.js';
+import { juegoDesdeNumero, claveNumero } from './repo.js';
 import { buscarPorNumero, buscarPorPasscode, buscarEnLinea } from './catalogo.js';
 import { ajustes } from './tema.js';
 
@@ -33,6 +33,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   const def = h('input', { type: 'text', inputmode: 'numeric', maxlength: '5', autocomplete: 'off', placeholder: 'número o ?' });
   const juego = h('span', { class: 'etiqueta' });
   const estado = h('p', { class: 'nota estado-busqueda' });
+  const opcionesNum = h('div');
   const filaAtaque = h('div', { class: 'fila' }, campo('ATK', atk), campo('DEF', def));
 
   const pintarIcono = () => icono.replaceChildren(iconoAtributo(atributo.value, 40));
@@ -88,13 +89,22 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     const d = leer();
     estado.textContent = 'Buscando…';
     let r = await buscarPorNumero(d.cardNumber);
-    if (!r) r = await buscarPorPasscode(d.passcode);
+    if (!r) r = await buscarPorPasscode(d.passcode, d.cardNumber);
     if (!r && ajustes.buscarEnLinea) r = await buscarEnLinea({ cardNumber: d.cardNumber, passcode: d.passcode });
+    opcionesNum.replaceChildren();
     if (r) {
-      const { origen, setNombre, ...datos } = r;
+      const { origen, setNombre, opcionesNumero, ...datos } = r;
       llenar(datos);
+      // Si se encontró por passcode y el Card Number no coincide, ofrecer las impresiones de esa carta
+      if (opcionesNumero?.length && !datos.cardNumber) {
+        opcionesNum.append(h('p', { class: 'nota', text: 'Elige tu Card Number (impresiones de esta carta):' }),
+          h('div', { class: 'sugerencias' }, opcionesNumero.map((o) => h('button', {
+            type: 'button', class: 'chip', text: `${o.n}${o.r.length ? ' · ' + o.r.join('/') : ''}`,
+            onclick: () => { llenar({ cardNumber: o.n, rarezas: o.r }); rareza.value = o.r.length === 1 ? o.r[0] : rareza.value; opcionesNum.replaceChildren(); },
+          }))));
+      }
       estado.textContent = origen === 'catalogo'
-        ? '✔ Encontrada en el catálogo' + (setNombre ? ` · ${setNombre}` : '')
+        ? '✔ Encontrada en el catálogo' + (setNombre ? ` · ${setNombre}` : '') + (datos.cardNumber && claveNumero(datos.cardNumber) !== claveNumero(d.cardNumber) ? ' · Card Number corregido' : '')
         : '✔ Encontrada en línea (YGOPRODeck). El nombre en japonés se captura a mano.';
     } else {
       estado.textContent = 'No se encontró en el catálogo. Revisa y completa los datos a mano.';
@@ -109,6 +119,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   const el = h('div', { class: 'formulario-carta' },
     estado,
     h('div', { class: 'fila' }, campo('Card Number *', cardNumber), h('div', { class: 'campo juego' }, h('span', { text: 'Juego' }), juego)),
+    opcionesNum,
     h('div', { class: 'fila-botones' }, h('button', { type: 'button', class: 'btn secundario', text: '🔎 Buscar datos de la carta', onclick: () => buscar() })),
     h('div', { class: 'fila' }, campo('Edición *', edicion), campo('Rareza *', rareza)),
     sugerRareza, listaRarezas,
