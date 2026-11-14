@@ -2,7 +2,7 @@
 // Al publicar una nueva versión, cambia CACHE_VERSION (y APP_VERSION en js/config.js)
 // y agrega aquí cualquier archivo nuevo.
 
-const CACHE_VERSION = 'miappyugioh-1.0.3';
+const CACHE_VERSION = 'miappyugioh-1.1.0';
 
 const ARCHIVOS = [
   './',

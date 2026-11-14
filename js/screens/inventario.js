@@ -28,7 +28,7 @@ export async function render(cont, params = {}) {
       h('div', { class: 'fila-carta-texto' },
         h('strong', { text: c.nombreEn || c.nombreJa || '(sin nombre)' }),
         c.nombreJa && c.nombreEn ? h('span', { class: 'nota', lang: 'ja', text: c.nombreJa }) : null,
-        h('span', { class: 'nota mono', text: `${c.cardNumber} · ${c.rareza} · ${c.edicion}` }),
+        h('span', { class: 'nota mono', text: `${c.numeroPropio ? '✎ ' : ''}${c.cardNumber} · ${c.rareza} · ${c.edicion}` }),
         c.tipo === 'Monstruo' ? h('span', { class: 'nota', text: `ATK ${c.atk || '—'} / DEF ${c.def || '—'}` }) : null),
       h('span', { class: 'etiqueta' + (c.juego === 'OCG' ? ' ocg' : ''), text: c.juego || '?' }))));
     if (actuales.length > 400) lista.append(h('p', { class: 'nota', text: 'Se muestran 400. Usa el buscador o exporta a CSV.' }));

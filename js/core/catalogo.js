@@ -14,7 +14,7 @@ export function actualizarCatalogo(onProgreso) {
     w.onmessage = (e) => {
       const m = e.data;
       if (m.tipo === 'progreso') onProgreso?.(m);
-      else if (m.tipo === 'listo') { w.terminate(); resolve(m.meta); }
+      else if (m.tipo === 'listo') { w.terminate(); olvidarCacheNombres(); resolve(m.meta); }
       else if (m.tipo === 'error') { w.terminate(); reject(new Error(m.mensaje)); }
     };
     w.onerror = (e) => { w.terminate(); reject(new Error(e.message || 'Error en la descarga')); };
@@ -70,7 +70,7 @@ export async function buscarPorPasscode(passcode, numeroLeido = '', preferencia 
   if (!r) return null;
   const k = claveNumero(numeroLeido);
   // Opciones de Card Number de esta carta, de la más parecida a lo leído a la menos
-  const opciones = r.impresiones
+  const opciones = r.impresiones.filter((i) => i.n)
     .map((i) => ({ n: i.n, s: i.s, r: i.r, d: k ? distancia(k, claveNumero(i.n)) : 0 }))
     .sort((a, b) => a.d - b.d);
   const vistas = new Set();
@@ -133,3 +133,75 @@ export async function buscarEnLinea({ cardNumber, passcode }) {
   }
   return null;
 }
+
+// ---------- Flujo de escaneo por líneas (passcode → impresión) ----------
+
+const juegoImpresion = (i) => juegoDesdeNumero(i.n) || (i.l === 'en' ? 'TCG' : 'OCG');
+
+/** Registro del catálogo por passcode (o null). */
+export async function cartaPorPasscode(passcode) {
+  const p = String(passcode || '').replace(/\D/g, '').padStart(8, '0');
+  if (!/^\d{8}$/.test(p) || p === '00000000') return null;
+  return (await db.buscarIndice('catalogo', 'passcode', p)) || null;
+}
+
+/** Impresiones de una carta, sin repetir, con su juego (TCG/OCG). */
+export function impresionesDe(r) {
+  const vistas = new Map();
+  for (const i of r.impresiones || []) {
+    const k = (i.n || '') + '|' + (i.n ? '' : i.s);
+    const prev = vistas.get(k);
+    if (prev) prev.r = [...new Set([...prev.r, ...i.r])];
+    else vistas.set(k, { n: i.n, s: i.s, r: [...i.r], j: juegoImpresion(i) });
+  }
+  return [...vistas.values()];
+}
+
+/** Elige la impresión con número más parecida a lo leído por la cámara (o null si no hay una clara). */
+export function impresionPorLectura(r, textoLeido) {
+  const k = claveNumero(textoLeido);
+  if (k.length < 4) return null;
+  const conNum = impresionesDe(r).filter((i) => i.n);
+  const ranking = conNum.map((i) => {
+    const kk = claveNumero(i.n);
+    // compara también contra el pedazo de igual largo dentro de lo leído (por basura en los bordes)
+    let d = distancia(k, kk);
+    for (let s = 0; s + kk.length <= k.length; s++) d = Math.min(d, distancia(k.slice(s, s + kk.length), kk));
+    return { i, d };
+  }).sort((a, b) => a.d - b.d);
+  if (!ranking.length) return null;
+  const [a, b] = ranking;
+  if (a.d <= 3 && (!b || b.d > a.d)) return a.i;
+  return null;
+}
+
+/** Datos del formulario para una carta del catálogo y una impresión elegida. */
+export function datosDe(r, imp) {
+  return {
+    nombreEn: r.en, nombreJa: r.ja, passcode: r.passcode, tipo: r.tipo, atributo: r.attr,
+    atk: r.atk === '' ? '' : String(r.atk), def: r.def === '' ? '' : String(r.def),
+    cardNumber: imp?.n || '', rarezas: imp ? imp.r : [], setNombre: imp?.s || '', juego: imp?.j || '',
+    origen: 'catalogo',
+  };
+}
+
+// ---------- Búsqueda por nombre ----------
+
+let cacheNombres = null;
+export async function buscarPorNombre(q, max = 30) {
+  const t = String(q || '').trim().toLowerCase();
+  if (t.length < 2) return [];
+  if (!cacheNombres) {
+    const todos = await db.todos('catalogo');
+    cacheNombres = todos.map((r) => ({ id: r.id, passcode: r.passcode, en: r.en, ja: r.ja, attr: r.attr, b: (r.en + ' ' + r.ja).toLowerCase() }));
+  }
+  const empieza = [], contiene = [];
+  for (const r of cacheNombres) {
+    const i = r.b.indexOf(t);
+    if (i === 0) empieza.push(r); else if (i > 0) contiene.push(r);
+    if (empieza.length >= max) break;
+  }
+  return [...empieza, ...contiene].slice(0, max);
+}
+export const olvidarCacheNombres = () => { cacheNombres = null; };
+export const cartaPorId = (id) => db.obtener('catalogo', id);

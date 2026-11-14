@@ -23,8 +23,9 @@ function compactar(c) {
   const sets = c.sets && typeof c.sets === 'object' ? c.sets : {};
   for (const reg of REGIONES) {
     for (const p of Array.isArray(sets[reg]) ? sets[reg] : []) {
-      if (!p || !p.set_number) continue;
-      impresiones.push({ n: String(p.set_number), s: String(p.set_name || ''), r: Array.isArray(p.rarities) ? p.rarities.map(String) : [], l: reg });
+      if (!p || (!p.set_number && !p.set_name)) continue;
+      // Las impresiones antiguas sin Card Number se guardan con n vacío (se identifican por el set)
+      impresiones.push({ n: String(p.set_number || ''), s: String(p.set_name || ''), r: Array.isArray(p.rarities) ? p.rarities.map(String) : [], l: reg });
     }
   }
   return {
@@ -58,7 +59,7 @@ async function guardarLotes(registros, extra = {}) {
     });
     post('progreso', { etapa: 'Guardando', avance: Math.min(1, (i + LOTE) / registros.length) });
   }
-  const meta = { fecha: new Date().toISOString(), total: registros.length, fuente: 'YAML Yugi', ...extra };
+  const meta = { fecha: new Date().toISOString(), total: registros.length, fuente: 'YAML Yugi', formato: 2, ...extra };
   await new Promise((res, rej) => {
     const t = db.transaction('ajustes', 'readwrite');
     t.objectStore('ajustes').put({ clave: 'catalogoMeta', valor: meta });
@@ -98,7 +99,8 @@ self.onmessage = async (e) => {
     }
     const conJa = registros.filter((r) => r.ja).length;
     const conNum = registros.filter((r) => r.numeros.length).length;
-    const meta = await guardarLotes(registros, { omitidas, conJa, conNum });
+    const sinNum = registros.filter((r) => r.impresiones.some((i) => !i.n)).length;
+    const meta = await guardarLotes(registros, { omitidas, conJa, conNum, sinNum });
     post('listo', { meta });
   } catch (err) {
     post('error', { mensaje: err.message || String(err) });

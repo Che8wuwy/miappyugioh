@@ -52,7 +52,10 @@ export function prepararCarta(d) {
     atributo,
     atk: tipo === 'Monstruo' ? valorAtaque(d.atk) : '',
     def: tipo === 'Monstruo' ? valorAtaque(d.def) : '',
-    juego: juegoDesdeNumero(cardNumber),
+    // Juego: el que dio el catálogo para la impresión; si no, por el código de región del Card Number
+    juego: (['TCG', 'OCG'].includes(d.juego) ? d.juego : '') || juegoDesdeNumero(cardNumber) || (d.numeroPropio === true ? 'OCG' : ''),
+    // true = Card Number escrito por el usuario porque la carta no lo trae (cartas OCG antiguas)
+    numeroPropio: d.numeroPropio === true,
     origen: ['camara', 'catalogo', 'manual', 'en-linea'].includes(d.origen) ? d.origen : 'manual',
   };
 }
@@ -69,8 +72,46 @@ export async function agregarCarta(datos) {
     if (existente) return { nueva: false, registro: existente };
     c.fechaAlta = new Date().toISOString();
     c.id = await db.prom(st.add(c));
-    return { nueva: true, registro: c };
+    // ¿Ya tenía este mismo monstruo/carta (mismo passcode) en otra versión?
+    const mismas = c.passcode ? await db.prom(st.index('passcode').getAll(c.passcode)) : [];
+    const otrasVersiones = mismas.filter((x) => x.id !== c.id && x.cardNumberKey !== c.cardNumberKey);
+    return { nueva: true, registro: c, otrasVersiones };
   });
+}
+
+function distancia(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  }
+  return d[a.length][b.length];
+}
+
+/** Card Numbers propios que ya usaste para este passcode (sin repetir). */
+export async function numerosPropiosDe(passcode) {
+  const p = String(passcode || '').replace(/\D/g, '');
+  if (!p) return [];
+  const lista = await db.porIndice('cartas', 'passcode', p);
+  const vistos = new Map();
+  for (const c of lista) if (c.numeroPropio && !vistos.has(c.cardNumberKey)) vistos.set(c.cardNumberKey, c);
+  return [...vistos.values()];
+}
+
+/**
+ * Revisión antes de guardar una carta con Card Number propio.
+ * - distintos: la misma carta (passcode) ya tiene OTRO número propio (con marca si parece error de escritura)
+ * - enOtraCarta: ese mismo número propio ya lo usaste para una carta distinta (otro passcode)
+ */
+export async function revisarNumeroPropio(datos) {
+  const c = prepararCarta(datos);
+  if (!c.numeroPropio) return { distintos: [], enOtraCarta: [] };
+  const distintos = (await numerosPropiosDe(c.passcode))
+    .filter((x) => x.cardNumberKey !== c.cardNumberKey)
+    .map((x) => ({ carta: x, parecido: distancia(x.cardNumberKey, c.cardNumberKey) <= 2 }));
+  const mismos = await db.porIndice('cartas', 'cardNumberKey', c.cardNumberKey);
+  const enOtraCarta = mismos.filter((x) => x.passcode && c.passcode && x.passcode !== c.passcode);
+  return { distintos, enOtraCarta };
 }
 
 /** Edita una carta existente (respetando que la llave no choque con otra). */

@@ -25,9 +25,9 @@ function celdaCSV(v) {
 
 /** CSV con separador ";" (Excel en español) y BOM para acentos y japonés. */
 export function exportarCSV(cartas) {
-  const filas = [['Card Number', 'Edición', 'Rareza', 'Nombre (inglés)', 'Nombre (japonés)', 'Passcode', 'Tipo', 'Atributo', 'ATK', 'DEF', 'Juego', 'Fecha de alta']];
+  const filas = [['Card Number', 'Número propio', 'Edición', 'Rareza', 'Nombre (inglés)', 'Nombre (japonés)', 'Passcode', 'Tipo', 'Atributo', 'ATK', 'DEF', 'Juego', 'Fecha de alta']];
   for (const c of cartas) {
-    filas.push([c.cardNumber, c.edicion, c.rareza, c.nombreEn, c.nombreJa, c.passcode, c.tipo,
+    filas.push([c.cardNumber, c.numeroPropio ? 'Sí' : 'No', c.edicion, c.rareza, c.nombreEn, c.nombreJa, c.passcode, c.tipo,
       ATRIBUTOS[c.atributo]?.nombre || '', c.atk, c.def, c.juego, fechaHora(c.fechaAlta)]);
   }
   const csv = '﻿' + filas.map((f) => f.map(celdaCSV).join(';')).join('\r\n');

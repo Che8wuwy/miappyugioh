@@ -1,6 +1,7 @@
 import { h, toast, confirmar, fechaHora } from '../core/ui.js';
 import { infoCatalogo, actualizarCatalogo, buscarPorNumero, buscarPorPasscode } from '../core/catalogo.js';
 import { iconoAtributo } from '../core/atributos.js';
+import { FORMATO_CATALOGO } from '../config.js';
 
 export const titulo = 'Catálogo';
 
@@ -15,7 +16,8 @@ export async function render(cont) {
     estado.replaceChildren(h('h2', { text: 'Estado' }), m
       ? h('div', {},
         h('p', {}, h('strong', { text: m.total.toLocaleString('es-MX') }), ' cartas · actualizado el ', fechaHora(m.fecha)),
-        m.conJa != null ? h('p', { class: 'nota', text: `${m.conJa.toLocaleString('es-MX')} con nombre japonés · ${m.conNum.toLocaleString('es-MX')} con Card Number` }) : null,
+        m.conJa != null ? h('p', { class: 'nota', text: `${m.conJa.toLocaleString('es-MX')} con nombre japonés · ${m.conNum.toLocaleString('es-MX')} con Card Number` + (m.sinNum != null ? ` · ${m.sinNum.toLocaleString('es-MX')} con impresiones sin número` : '') }) : null,
+        (m.formato || 1) < FORMATO_CATALOGO ? h('p', { class: 'error', text: 'Este catálogo es de una versión anterior: vuelve a descargarlo.' }) : null,
         h('p', { class: 'nota', text: 'Fuente: ' + m.fuente }))
       : h('p', { text: 'Todavía no hay catálogo descargado.' }));
   }

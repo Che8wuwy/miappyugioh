@@ -130,6 +130,17 @@ input[type="search"] { margin-bottom: .6rem; }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---- MiAppYuGiOh ---- */
+.camara-linea { aspect-ratio: 4 / 3; }
+.guia-linea { top: 40%; height: 20%; left: 6%; right: 6%; }
+.modal-aviso { border-top: 6px solid #f59e0b; }
+.opciones-modal { display: flex; flex-direction: column; gap: .5rem; margin-top: .8rem; }
+.alerta-nota { background: rgba(0, 0, 0, .25); border-radius: 10px; padding: .5rem .9rem; font-size: 1rem; max-width: 28rem; }
+.ficha-carta { display: flex; gap: .7rem; align-items: center; margin-bottom: .6rem; }
+.ficha-carta div { display: flex; flex-direction: column; }
+.grupo-impresiones h3 { font-size: .95rem; margin: .8rem 0 .3rem; color: var(--tenue); }
+.chip.propio { border-style: dashed; }
+.marca-propio { color: var(--principal); font-weight: 700; }
+.resultados-nombre .fila-carta { padding: .55rem .7rem; }
 .camara-carta { aspect-ratio: 3 / 4; }
 .guia-carta { position: absolute; left: 50%; top: 50%; height: 88%; aspect-ratio: 59 / 86; transform: translate(-50%, -50%); border: 3px solid #fff; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .45); pointer-events: none; }
 .camara-ayuda.arriba { top: 1%; }

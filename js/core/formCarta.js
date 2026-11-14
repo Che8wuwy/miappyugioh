@@ -32,12 +32,17 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   const atk = h('input', { type: 'text', inputmode: 'numeric', maxlength: '5', autocomplete: 'off', placeholder: 'número o ?' });
   const def = h('input', { type: 'text', inputmode: 'numeric', maxlength: '5', autocomplete: 'off', placeholder: 'número o ?' });
   const juego = h('span', { class: 'etiqueta' });
+  const propio = h('input', { type: 'checkbox' });
+  const zonaPropios = h('div');
+  const pintarPropio = () => { cardNumber.placeholder = propio.checked ? 'Escribe tu número, ej. VOL1-JP002' : 'Ej. LOB-EN001'; };
+  propio.addEventListener('change', () => { pintarPropio(); pintarJuego(); });
   const estado = h('p', { class: 'nota estado-busqueda' });
   const opcionesNum = h('div');
   const filaAtaque = h('div', { class: 'fila' }, campo('ATK', atk), campo('DEF', def));
 
   const pintarIcono = () => icono.replaceChildren(iconoAtributo(atributo.value, 40));
-  const pintarJuego = () => { const j = juegoDesdeNumero(cardNumber.value); juego.textContent = j || '¿TCG/OCG?'; };
+  let juegoCatalogo = ''; // juego que dio el catálogo para la impresión elegida (cartas antiguas sin código de región)
+  const pintarJuego = () => { const j = juegoCatalogo || juegoDesdeNumero(cardNumber.value) || (propio.checked ? 'OCG' : ''); juego.textContent = j || '¿TCG/OCG?'; };
   const pintarTipo = () => { filaAtaque.classList.toggle('oculto', tipo.value !== 'Monstruo' && tipo.value !== ''); };
 
   atributo.addEventListener('change', () => {
@@ -52,7 +57,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     else if (['SPELL', 'TRAP'].includes(atributo.value)) atributo.value = '';
     pintarIcono(); pintarTipo();
   });
-  cardNumber.addEventListener('input', () => { cardNumber.value = cardNumber.value.toUpperCase(); pintarJuego(); });
+  cardNumber.addEventListener('input', () => { cardNumber.value = cardNumber.value.toUpperCase(); juegoCatalogo = ''; pintarJuego(); });
   cardNumber.addEventListener('change', () => edicionJaponesa());
 
   // Las cartas japonesas (región JP) no tienen edición: se fija "Sin edición (OCG)"
@@ -79,6 +84,8 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     poner(atk, d.atk); poner(def, d.def);
     if (d.rarezas) ponerRarezas(d.rarezas);
     if (d.rarezas?.length === 1 && !rareza.value) rareza.value = d.rarezas[0];
+    if (d.numeroPropio !== undefined) { propio.checked = !!d.numeroPropio; pintarPropio(); }
+    if (d.juego !== undefined) juegoCatalogo = ['TCG', 'OCG'].includes(d.juego) ? d.juego : '';
     if (d.cardNumber && !inicial) edicionJaponesa();
     pintarIcono(); pintarJuego(); pintarTipo();
   }
@@ -88,7 +95,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     return {
       cardNumber: cardNumber.value, edicion: edicion.value, rareza: rareza.value, nombreEn: nombreEn.value,
       nombreJa: nombreJa.value, passcode: passcode.value, tipo: tipo.value, atributo: atributo.value,
-      atk: atk.value, def: def.value,
+      atk: atk.value, def: def.value, numeroPropio: propio.checked, juego: juegoCatalogo,
     };
   }
 
@@ -96,8 +103,10 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   async function buscar({ silencioso = false, preferencia = '' } = {}) {
     const d = leer();
     estado.textContent = 'Buscando…';
-    let r = await buscarPorNumero(d.cardNumber);
-    if (!r) r = await buscarPorPasscode(d.passcode, d.cardNumber, preferencia);
+    // Con número propio no se busca ni se corrige el Card Number: solo los datos por passcode
+    let r = d.numeroPropio ? null : await buscarPorNumero(d.cardNumber);
+    if (!r) r = await buscarPorPasscode(d.passcode, d.numeroPropio ? '' : d.cardNumber, d.numeroPropio ? '' : preferencia);
+    if (r && d.numeroPropio) { delete r.cardNumber; delete r.opcionesNumero; delete r.autoElegido; }
     if (!r && ajustes.buscarEnLinea) r = await buscarEnLinea({ cardNumber: d.cardNumber, passcode: d.passcode });
     opcionesNum.replaceChildren();
     if (r) {
@@ -128,6 +137,8 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   const el = h('div', { class: 'formulario-carta' },
     estado,
     h('div', { class: 'fila' }, campo('Card Number *', cardNumber), h('div', { class: 'campo juego' }, h('span', { text: 'Juego' }), juego)),
+    h('label', { class: 'check' }, propio, h('span', {}, 'Card Number propio', h('small', { class: 'nota bloque', text: 'La carta no trae Card Number (OCG antiguas): escribe uno tuyo para identificarla.' }))),
+    zonaPropios,
     opcionesNum,
     h('div', { class: 'fila-botones' }, h('button', { type: 'button', class: 'btn secundario', text: '🔎 Buscar datos de la carta', onclick: () => buscar() })),
     h('div', { class: 'fila' }, campo('Edición *', edicion), campo('Rareza *', rareza)),
@@ -139,5 +150,19 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     filaAtaque,
     botones.length ? h('div', { class: 'fila-botones' }, botones) : null);
 
-  return { el, leer, llenar, buscar, setEstado: (t) => { estado.textContent = t; } };
+  /** Para cartas sin Card Number: ofrece los números propios ya usados y los sets sin número del catálogo. */
+  function ofrecerPropios(propios = [], sets = []) {
+    zonaPropios.replaceChildren();
+    if (propios.length) {
+      zonaPropios.append(h('p', { class: 'nota', text: 'Ya usaste estos números para esta carta:' }),
+        h('div', { class: 'sugerencias' }, propios.map((p) => h('button', {
+          type: 'button', class: 'chip propio', text: `✎ ${p.cardNumber} · ${p.rareza}`,
+          onclick: () => { cardNumber.value = p.cardNumber; },
+        }))));
+    }
+    if (sets.length) zonaPropios.append(h('p', { class: 'nota', text: 'Sets sin número en el catálogo: ' + sets.join(' · ') }));
+  }
+
+  pintarPropio();
+  return { el, leer, llenar, buscar, ofrecerPropios, setEstado: (t) => { estado.textContent = t; } };
 }

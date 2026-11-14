@@ -58,13 +58,31 @@ export function confirmar(titulo, mensaje, { aceptar = 'Aceptar', cancelar = 'Ca
  * Alerta grande de resultado: tipo 'rojo' (ya registrado) o 'verde' (nuevo).
  * Parpadea, vibra y se cierra al tocarla.
  */
-export function alertaResultado(tipo, titulo, codigo, detalle, vibrar = true) {
+/**
+ * Ventana con varias opciones. opciones: [{ texto, valor, clase }]. Devuelve el valor elegido (o null).
+ * tipo 'aviso' la pinta en amarillo.
+ */
+export function elegir(titulo, mensajes, opciones, tipo = '') {
+  return new Promise((resolve) => {
+    const cerrar = (v) => { fondo.remove(); resolve(v); };
+    const fondo = h('div', { class: 'modal-fondo' },
+      h('div', { class: 'modal' + (tipo === 'aviso' ? ' modal-aviso' : ''), role: 'dialog', 'aria-modal': 'true' },
+        h('h2', { text: titulo }),
+        [].concat(mensajes).map((m) => h('p', { text: m })),
+        h('div', { class: 'opciones-modal' }, opciones.map((o) =>
+          h('button', { class: 'btn ' + (o.clase || 'secundario'), text: o.texto, onclick: () => cerrar(o.valor) })))));
+    document.body.append(fondo);
+  });
+}
+
+export function alertaResultado(tipo, titulo, codigo, detalle, vibrar = true, nota = '') {
   return new Promise((resolve) => {
     const el = h('div', { class: `alerta alerta-${tipo}`, role: 'alert' },
       h('div', { class: 'alerta-icono', text: tipo === 'rojo' ? '✖' : '✔' }),
       h('div', { class: 'alerta-titulo', text: titulo }),
       h('div', { class: 'alerta-codigo', text: codigo }),
       h('div', { class: 'alerta-detalle', text: detalle }),
+      nota ? h('div', { class: 'alerta-nota', text: nota }) : null,
       h('div', { class: 'alerta-pie', text: 'Toca para continuar' }));
     el.addEventListener('click', () => { el.remove(); resolve(); });
     document.body.append(el);

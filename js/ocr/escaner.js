@@ -300,3 +300,27 @@ export async function leerCarta(carta, onPaso) {
   res.atributo = adivinarAtributo(colorZona(carta, ZONAS.atributo));
   return res;
 }
+
+// ---------- Modo línea: el usuario encuadra solo una línea de la carta ----------
+
+const TODA = { x: 0, y: 0, w: 1, h: 1 };
+
+/**
+ * Lee la línea del passcode (abajo a la izquierda): "92932860  1st Edition".
+ * Devuelve { passcode, edicion, texto }.
+ */
+export async function leerLineaPasscode(recorte) {
+  const w = await prepararOCR();
+  const variantes = recortarZona(recorte, TODA);
+  let t = await leerZona(w, variantes, '0123456789 ', (x) => /\d{8}/.test(x.replace(/ /g, '')));
+  const m = t.replace(/ /g, '').match(/\d{8}/);
+  const t2 = await leerZona(w, variantes, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ªº ', (x) => !!extraerEdicion(x));
+  return { passcode: m ? m[0] : '', edicion: extraerEdicion(t2), texto: t };
+}
+
+/** Lee la línea del Card Number. Devuelve el texto en bruto (se compara contra las impresiones de la carta). */
+export async function leerLineaNumero(recorte) {
+  const w = await prepararOCR();
+  const t = await leerZona(w, recortarZona(recorte, TODA), LETRAS_NUM, (x) => puntajeNumero(x) >= 3);
+  return t;
+}

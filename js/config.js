@@ -3,7 +3,7 @@
 
 export const APP_NOMBRE = 'MiAppYuGiOh';
 export const APP_TITULO = 'MiAppYuGiOh!';
-export const APP_VERSION = '1.0.3';
+export const APP_VERSION = '1.1.0';
 
 // Base de datos local (IndexedDB)
 export const DB_NOMBRE = 'miappyugioh';
@@ -36,12 +36,15 @@ export const EDICIONES = ['1st Edition', 'Unlimited', 'Limited Edition', 'Sin ed
 
 // Lista base de rarezas (TCG y OCG). En el formulario también se puede escribir otra.
 export const RAREZAS = [
-  'Common', 'Short Print', 'Rare', 'Super Rare', 'Ultra Rare', 'Secret Rare', 'Ultimate Rare',
+  'Common', 'Normal', 'Parallel Rare', 'Short Print', 'Rare', 'Super Rare', 'Ultra Rare', 'Secret Rare', 'Ultimate Rare',
   'Ghost Rare', 'Starlight Rare', "Collector's Rare", 'Prismatic Secret Rare', 'Platinum Secret Rare',
   'Quarter Century Secret Rare', 'Extra Secret Rare', 'Holographic Rare', 'Normal Parallel Rare',
   'Super Parallel Rare', 'Ultra Parallel Rare', 'Gold Rare', 'Premium Gold Rare', 'Starfoil Rare',
   'Mosaic Rare', 'Shatterfoil Rare', 'Grand Master Rare',
 ];
+
+// Formato de catálogo que espera esta versión (si el descargado es más viejo, se pide actualizarlo)
+export const FORMATO_CATALOGO = 2;
 
 export const TIPOS_CARTA = ['Monstruo', 'Mágica', 'Trampa'];
 
