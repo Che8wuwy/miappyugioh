@@ -53,6 +53,13 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     pintarIcono(); pintarTipo();
   });
   cardNumber.addEventListener('input', () => { cardNumber.value = cardNumber.value.toUpperCase(); pintarJuego(); });
+  cardNumber.addEventListener('change', () => edicionJaponesa());
+
+  // Las cartas japonesas (región JP) no tienen edición: se fija "Sin edición (OCG)"
+  // para que la llave sea siempre la misma. Se puede cambiar a mano después.
+  function edicionJaponesa() {
+    if (/-(JP|JA)\d/i.test(cardNumber.value)) edicion.value = 'Sin edición (OCG)';
+  }
   passcode.addEventListener('input', () => { passcode.value = passcode.value.replace(/\D/g, ''); });
 
   function ponerRarezas(lista) {
@@ -62,7 +69,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
       h('button', { type: 'button', class: 'chip', text: r, onclick: () => { rareza.value = r; } })));
   }
 
-  function llenar(d = {}, { soloVacios = false } = {}) {
+  function llenar(d = {}, { soloVacios = false, inicial = false } = {}) {
     const poner = (input, v) => { if (v === undefined || v === null) return; if (soloVacios && input.value) return; input.value = String(v); };
     poner(cardNumber, d.cardNumber); poner(rareza, d.rareza);
     if (d.edicion && EDICIONES.includes(d.edicion) && !(soloVacios && edicion.dataset.tocado)) edicion.value = d.edicion;
@@ -72,6 +79,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
     poner(atk, d.atk); poner(def, d.def);
     if (d.rarezas) ponerRarezas(d.rarezas);
     if (d.rarezas?.length === 1 && !rareza.value) rareza.value = d.rarezas[0];
+    if (d.cardNumber && !inicial) edicionJaponesa();
     pintarIcono(); pintarJuego(); pintarTipo();
   }
   edicion.addEventListener('change', () => { edicion.dataset.tocado = '1'; });
@@ -85,19 +93,19 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   }
 
   /** Busca en el catálogo (y en línea si está permitido) y llena los datos de la carta. */
-  async function buscar({ silencioso = false } = {}) {
+  async function buscar({ silencioso = false, preferencia = '' } = {}) {
     const d = leer();
     estado.textContent = 'Buscando…';
     let r = await buscarPorNumero(d.cardNumber);
-    if (!r) r = await buscarPorPasscode(d.passcode, d.cardNumber);
+    if (!r) r = await buscarPorPasscode(d.passcode, d.cardNumber, preferencia);
     if (!r && ajustes.buscarEnLinea) r = await buscarEnLinea({ cardNumber: d.cardNumber, passcode: d.passcode });
     opcionesNum.replaceChildren();
     if (r) {
-      const { origen, setNombre, opcionesNumero, ...datos } = r;
+      const { origen, setNombre, opcionesNumero, autoElegido, ...datos } = r;
       llenar(datos);
       // Si se encontró por passcode y el Card Number no coincide, ofrecer las impresiones de esa carta
-      if (opcionesNumero?.length && !datos.cardNumber) {
-        opcionesNum.append(h('p', { class: 'nota', text: 'Elige tu Card Number (impresiones de esta carta):' }),
+      if (opcionesNumero?.length && (!datos.cardNumber || autoElegido)) {
+        opcionesNum.append(h('p', { class: 'nota', text: autoElegido ? '¿Es otra impresión? Elígela aquí:' : 'Elige tu Card Number (impresiones de esta carta):' }),
           h('div', { class: 'sugerencias' }, opcionesNumero.map((o) => h('button', {
             type: 'button', class: 'chip', text: `${o.n}${o.r.length ? ' · ' + o.r.join('/') : ''}`,
             onclick: () => { llenar({ cardNumber: o.n, rarezas: o.r }); rareza.value = o.r.length === 1 ? o.r[0] : rareza.value; opcionesNum.replaceChildren(); },
@@ -106,6 +114,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
       estado.textContent = origen === 'catalogo'
         ? '✔ Encontrada en el catálogo' + (setNombre ? ` · ${setNombre}` : '') + (datos.cardNumber && claveNumero(datos.cardNumber) !== claveNumero(d.cardNumber) ? ' · Card Number corregido' : '')
         : '✔ Encontrada en línea (YGOPRODeck). El nombre en japonés se captura a mano.';
+      if (autoElegido) estado.textContent += ' · Card Number elegido por la edición leída (única impresión TCG): verifícalo';
     } else {
       estado.textContent = 'No se encontró en el catálogo. Revisa y completa los datos a mano.';
       if (!silencioso) toast('No se encontró la carta.');
@@ -114,7 +123,7 @@ export function formularioCarta(inicial = {}, { botones = [] } = {}) {
   }
 
   ponerRarezas([]);
-  llenar(inicial);
+  llenar(inicial, { inicial: true }); // al abrir una carta guardada no se cambia su edición
 
   const el = h('div', { class: 'formulario-carta' },
     estado,

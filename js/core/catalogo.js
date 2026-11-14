@@ -2,7 +2,7 @@
 
 import * as db from './db.js';
 import { FUENTES } from '../config.js';
-import { claveNumero } from './repo.js';
+import { claveNumero, juegoDesdeNumero } from './repo.js';
 import { ATRIBUTOS } from './atributos.js';
 
 export const infoCatalogo = async () => (await db.obtener('ajustes', 'catalogoMeta'))?.valor || null;
@@ -63,7 +63,7 @@ function distancia(a, b) {
  * Busca por passcode. Si además se leyó un Card Number (aunque con errores),
  * elige la impresión del catálogo más parecida y corrige el Card Number.
  */
-export async function buscarPorPasscode(passcode, numeroLeido = '') {
+export async function buscarPorPasscode(passcode, numeroLeido = '', preferencia = '') {
   const p = String(passcode || '').replace(/\D/g, '').padStart(8, '0');
   if (!/^\d{8}$/.test(p) || p === '00000000') return null;
   const r = await db.buscarIndice('catalogo', 'passcode', p);
@@ -74,11 +74,20 @@ export async function buscarPorPasscode(passcode, numeroLeido = '') {
     .map((i) => ({ n: i.n, s: i.s, r: i.r, d: k ? distancia(k, claveNumero(i.n)) : 0 }))
     .sort((a, b) => a.d - b.d);
   const vistas = new Set();
-  const opcionesNumero = opciones.filter((o) => !vistas.has(o.n) && vistas.add(o.n)).slice(0, 20);
+  let opcionesNumero = opciones.filter((o) => !vistas.has(o.n) && vistas.add(o.n));
   if (k && opciones.length && opciones[0].d <= 3) {
-    return { ...aFormulario(r, opciones[0].n), cardNumber: opciones[0].n, opcionesNumero };
+    return { ...aFormulario(r, opciones[0].n), cardNumber: opciones[0].n, opcionesNumero: opcionesNumero.slice(0, 20) };
   }
-  return { ...aFormulario(r, ''), opcionesNumero };
+  // Pista de juego (ej. se leyó "1st Edition" → TCG): esas impresiones primero,
+  // y si solo hay una, se elige automáticamente (el usuario puede cambiarla).
+  if (preferencia) {
+    const grupo = opcionesNumero.filter((o) => juegoDesdeNumero(o.n) === preferencia);
+    opcionesNumero = [...grupo, ...opcionesNumero.filter((o) => !grupo.includes(o))];
+    if (grupo.length === 1) {
+      return { ...aFormulario(r, grupo[0].n), cardNumber: grupo[0].n, autoElegido: true, opcionesNumero: opcionesNumero.slice(0, 20) };
+    }
+  }
+  return { ...aFormulario(r, ''), opcionesNumero: opcionesNumero.slice(0, 20) };
 }
 
 // ---------- Respaldo en línea (YGOPRODeck, solo TCG) ----------

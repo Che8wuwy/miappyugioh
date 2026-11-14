@@ -3,7 +3,7 @@
 
 export const APP_NOMBRE = 'MiAppYuGiOh';
 export const APP_TITULO = 'MiAppYuGiOh!';
-export const APP_VERSION = '1.0.1';
+export const APP_VERSION = '1.0.3';
 
 // Base de datos local (IndexedDB)
 export const DB_NOMBRE = 'miappyugioh';

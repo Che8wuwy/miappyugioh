@@ -121,7 +121,8 @@ export async function render(cont) {
       for (const cand of leido.candidatos || []) {
         if (await buscarPorNumero(cand)) { f.llenar({ cardNumber: cand }); break; }
       }
-      const r = await f.buscar({ silencioso: true });
+      // Si se leyó texto de edición (1st/Limited) la carta es TCG: las OCG japonesas no lo traen
+      const r = await f.buscar({ silencioso: true, preferencia: leido.edicion ? 'TCG' : '' });
       if (r) origen = r.origen;
       else f.setEstado('No se encontró en el catálogo. Lo leído por la cámara puede tener errores: revisa todo.');
       if (!leido.edicion) toast('Revisa la edición: no se pudo leer.', 3000);
