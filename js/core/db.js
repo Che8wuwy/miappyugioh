@@ -6,25 +6,24 @@ import { DB_NOMBRE, DB_VERSION } from '../config.js';
 
 const MIGRACIONES = {
   1(db) {
-    // Inventario: una fila por carta física distinta
-    const c = db.createObjectStore('cartas', { keyPath: 'id', autoIncrement: true });
-    // Llave del inventario: Card Number + Edición + Rareza (sin repetir)
-    c.createIndex('llave', ['cardNumberKey', 'edicion', 'rareza'], { unique: true });
-    c.createIndex('cardNumberKey', 'cardNumberKey');
-    c.createIndex('passcode', 'passcode');
+    const col = db.createObjectStore('colecciones', { keyPath: 'id', autoIncrement: true });
+    col.createIndex('anio', 'anio');
+    col.createIndex('fechaCreacion', 'fechaCreacion');
 
-    // Catálogo descargado (una fila por carta del juego)
-    const k = db.createObjectStore('catalogo', { keyPath: 'id' });
-    k.createIndex('numeros', 'numeros', { multiEntry: true }); // todos sus Card Numbers normalizados
-    k.createIndex('passcode', 'passcode');
+    const cod = db.createObjectStore('codigos', { keyPath: 'id', autoIncrement: true });
+    cod.createIndex('coleccionId', 'coleccionId');
+    // Regla clave: un código solo puede existir una vez POR colección
+    cod.createIndex('coleccion_codigo', ['coleccionId', 'codigo'], { unique: true });
 
     db.createObjectStore('ajustes', { keyPath: 'clave' });
 
-    // ---- Fase 2 (ya creada, vacía): fotos de las cartas del inventario ----
-    const f = db.createObjectStore('fotos', { keyPath: 'id', autoIncrement: true });
-    f.createIndex('cartaId', 'cartaId');
+    // ---- Fase 2 (ya creadas, vacías) ----
+    const fig = db.createObjectStore('figuras', { keyPath: 'id', autoIncrement: true });
+    fig.createIndex('coleccionId', 'coleccionId');
+    const img = db.createObjectStore('imagenes', { keyPath: 'id', autoIncrement: true });
+    img.createIndex('figuraId', 'figuraId');
   },
-  // 2(db, tx) { ... Fase 3: detalles/descripcion en el catálogo ... }
+  // 2(db, tx) { ... siguiente cambio de estructura ... }
 };
 
 let dbPromesa = null;

@@ -1,5 +1,5 @@
 :root {
-  --principal: #7c3aed;
+  --principal: #e85d04;
   --escala: 1;
   --fondo: #f6f6f7;
   --superficie: #ffffff;
@@ -78,7 +78,7 @@ input[type="search"] { margin-bottom: .6rem; }
 /* Cámara */
 .camara { position: relative; width: 100%; aspect-ratio: 3 / 4; max-height: 60vh; background: #000; border-radius: var(--radio); overflow: hidden; }
 .camara video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.guia { position: absolute; left: 8%; right: 8%; top: 41%; height: 15%; border: 3px solid #fff; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .45); }
+.guia { position: absolute; left: 8%; right: 8%; top: 38%; height: 24%; border: 3px solid #fff; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .45); }
 .camara-ayuda { position: absolute; left: 0; right: 0; top: 30%; text-align: center; color: #fff; font-weight: 600; font-size: .9rem; text-shadow: 0 1px 3px #000; }
 .codigo-input { font-family: ui-monospace, "Roboto Mono", monospace; font-size: 1.8rem; letter-spacing: .15em; text-align: center; text-transform: uppercase; padding: .8rem; }
 .sugerencias { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
@@ -128,36 +128,3 @@ input[type="search"] { margin-bottom: .6rem; }
 @keyframes girar { to { transform: rotate(360deg); } }
 .toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem); z-index: 60; background: #222; color: #fff; padding: .75rem 1.1rem; border-radius: 10px; max-width: 90vw; opacity: 0; transition: .25s; box-shadow: 0 4px 16px rgba(0, 0, 0, .3); }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
-
-/* ---- MiAppYuGiOh ---- */
-.camara-linea { aspect-ratio: 4 / 3; }
-.guia-linea { top: 40%; height: 20%; left: 6%; right: 6%; }
-.modal-aviso { border-top: 6px solid #f59e0b; }
-.opciones-modal { display: flex; flex-direction: column; gap: .5rem; margin-top: .8rem; }
-.alerta-nota { background: rgba(0, 0, 0, .25); border-radius: 10px; padding: .5rem .9rem; font-size: 1rem; max-width: 28rem; }
-.ficha-carta { display: flex; gap: .7rem; align-items: center; margin-bottom: .6rem; }
-.ficha-carta div { display: flex; flex-direction: column; }
-.grupo-impresiones h3 { font-size: .95rem; margin: .8rem 0 .3rem; color: var(--tenue); }
-.chip.propio { border-style: dashed; }
-.marca-propio { color: var(--principal); font-weight: 700; }
-.resultados-nombre .fila-carta { padding: .55rem .7rem; }
-.camara-carta { aspect-ratio: 3 / 4; }
-.guia-carta { position: absolute; left: 50%; top: 50%; height: 88%; aspect-ratio: 59 / 86; transform: translate(-50%, -50%); border: 3px solid #fff; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .45); pointer-events: none; }
-.camara-ayuda.arriba { top: 1%; }
-.aviso { background: #fff4e6; color: #7c2d12; border-radius: var(--radio); padding: .8rem 1rem; margin-bottom: 1rem; }
-.aviso p { margin: 0 0 .5rem; }
-.formulario-carta .fila { align-items: flex-end; }
-.campo.juego { flex: 0 0 auto; align-items: flex-start; }
-.fila-atributo .icono-contenedor { padding-bottom: .9rem; }
-.icono-atributo { display: inline-flex; flex: none; }
-.mono-input { font-family: ui-monospace, "Roboto Mono", monospace; letter-spacing: .05em; }
-.estado-busqueda { font-weight: 600; }
-.filtros { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .4rem; }
-.filtros select { flex: 1 1 30%; min-width: 0; font-size: .9rem; padding: .5rem; }
-.lista-cartas { margin-top: .8rem; }
-.fila-carta { display: flex; align-items: center; gap: .7rem; width: 100%; text-align: left; background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-radius: 12px; padding: .7rem; margin-bottom: .5rem; cursor: pointer; font: inherit; }
-.fila-carta-texto { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.fila-carta-texto .nota { margin: .1rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.etiqueta.ocg { background: #be185d; }
-.resumen-menu { text-align: center; }
-progress { width: 100%; height: 1rem; accent-color: var(--principal); }

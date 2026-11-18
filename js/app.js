@@ -8,11 +8,11 @@ import { cargarAjustes } from './core/tema.js';
 
 const PANTALLAS = {
   menu: () => import('./screens/menu.js'),
-  escanear: () => import('./screens/escanear.js'),
-  inventario: () => import('./screens/inventario.js'),
-  catalogo: () => import('./screens/catalogo.js'),
+  capturar: () => import('./screens/capturar.js'),
+  colecciones: () => import('./screens/colecciones.js'),
+  consultar: () => import('./screens/consultar.js'),
   configuracion: () => import('./screens/configuracion.js'),
-  // detalles: () => import('./screens/detalles.js'),   // Fase 3
+  // figuras: () => import('./screens/figuras.js'),   // Fase 2
 };
 
 let limpiarActual = null;
@@ -56,7 +56,7 @@ async function iniciar() {
   window.addEventListener('hashchange', mostrar);
   // Si el usuario sale de la app, apagar la cámara
   document.addEventListener('visibilitychange', () => {
-    if (!location.hash.startsWith('#/escanear')) return;
+    if (!location.hash.startsWith('#/capturar')) return;
     if (document.hidden) { if (limpiarActual) { limpiarActual(); limpiarActual = null; } }
     else mostrar();
   });

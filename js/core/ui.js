@@ -58,31 +58,13 @@ export function confirmar(titulo, mensaje, { aceptar = 'Aceptar', cancelar = 'Ca
  * Alerta grande de resultado: tipo 'rojo' (ya registrado) o 'verde' (nuevo).
  * Parpadea, vibra y se cierra al tocarla.
  */
-/**
- * Ventana con varias opciones. opciones: [{ texto, valor, clase }]. Devuelve el valor elegido (o null).
- * tipo 'aviso' la pinta en amarillo.
- */
-export function elegir(titulo, mensajes, opciones, tipo = '') {
-  return new Promise((resolve) => {
-    const cerrar = (v) => { fondo.remove(); resolve(v); };
-    const fondo = h('div', { class: 'modal-fondo' },
-      h('div', { class: 'modal' + (tipo === 'aviso' ? ' modal-aviso' : ''), role: 'dialog', 'aria-modal': 'true' },
-        h('h2', { text: titulo }),
-        [].concat(mensajes).map((m) => h('p', { text: m })),
-        h('div', { class: 'opciones-modal' }, opciones.map((o) =>
-          h('button', { class: 'btn ' + (o.clase || 'secundario'), text: o.texto, onclick: () => cerrar(o.valor) })))));
-    document.body.append(fondo);
-  });
-}
-
-export function alertaResultado(tipo, titulo, codigo, detalle, vibrar = true, nota = '') {
+export function alertaResultado(tipo, titulo, codigo, detalle, vibrar = true) {
   return new Promise((resolve) => {
     const el = h('div', { class: `alerta alerta-${tipo}`, role: 'alert' },
       h('div', { class: 'alerta-icono', text: tipo === 'rojo' ? '✖' : '✔' }),
       h('div', { class: 'alerta-titulo', text: titulo }),
       h('div', { class: 'alerta-codigo', text: codigo }),
       h('div', { class: 'alerta-detalle', text: detalle }),
-      nota ? h('div', { class: 'alerta-nota', text: nota }) : null,
       h('div', { class: 'alerta-pie', text: 'Toca para continuar' }));
     el.addEventListener('click', () => { el.remove(); resolve(); });
     document.body.append(el);
@@ -94,4 +76,27 @@ export function cargando(texto = 'Procesando…') {
   const el = h('div', { class: 'modal-fondo' }, h('div', { class: 'cargando' }, h('div', { class: 'spinner' }), h('p', { text: texto })));
   document.body.append(el);
   return { texto: (t) => { el.querySelector('p').textContent = t; }, cerrar: () => el.remove() };
+}
+
+/** Selector de colección con filtro por año (reutilizado en Capturar y Consultar). */
+export function selectorColeccion({ colecciones, anios, seleccionId, onCambio }) {
+  const selAnio = h('select', { 'aria-label': 'Año de la promoción' },
+    h('option', { value: '', text: 'Todos' }),
+    anios.map((a) => h('option', { value: String(a), text: String(a) })));
+  const selCol = h('select', { 'aria-label': 'Colección' });
+
+  const pintar = () => {
+    const anio = selAnio.value ? Number(selAnio.value) : null;
+    const lista = colecciones.filter((c) => !anio || c.anio === anio);
+    selCol.replaceChildren(...lista.map((c) =>
+      h('option', { value: String(c.id), text: `${c.nombre} (${c.anio}) · creada ${fechaCorta(c.fechaCreacion)}` })));
+    if (lista.some((c) => c.id === seleccionId)) selCol.value = String(seleccionId);
+    onCambio(selCol.value ? Number(selCol.value) : null);
+  };
+  selAnio.addEventListener('change', pintar);
+  selCol.addEventListener('change', () => { seleccionId = Number(selCol.value); onCambio(seleccionId); });
+  const caja = h('div', { class: 'selector' },
+    h('label', {}, 'Año', selAnio), h('label', {}, 'Colección', selCol));
+  queueMicrotask(pintar);
+  return caja;
 }

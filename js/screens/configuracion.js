@@ -1,7 +1,7 @@
 import { h, toast, confirmar, cargando } from '../core/ui.js';
 import { ajustes, cambiarAjuste } from '../core/tema.js';
 import { exportarRespaldo, importarRespaldo } from '../core/datos.js';
-import { APP_TITULO, APP_VERSION, COLORES } from '../config.js';
+import { APP_NOMBRE, APP_VERSION, COLORES, CODIGO_MIN, CODIGO_MAX } from '../config.js';
 
 export const titulo = 'Configuración';
 
@@ -25,15 +25,26 @@ export async function render(cont) {
     onchange: async (e) => {
       const f = e.target.files[0]; e.target.value = '';
       if (!f) return;
-      if (!(await confirmar('Importar respaldo', 'Se SUMARÁN las cartas del archivo a tu inventario. Las repetidas se omiten. No se borra nada.', { aceptar: 'Importar' }))) return;
+      if (!(await confirmar('Importar respaldo', 'Se SUMARÁN las colecciones y códigos del archivo a los que ya tienes. No se borra nada.', { aceptar: 'Importar' }))) return;
       const c = cargando('Importando…');
       try {
         const r = await importarRespaldo(f);
-        toast(`Importado: ${r.nuevas} carta(s). Repetidas: ${r.repetidas}. Inválidas: ${r.invalidas}.`, 4000);
+        toast(`Importado: ${r.nuevasCol} colección(es), ${r.nuevosCod} código(s). Repetidos omitidos: ${r.repetidos}.`, 4000);
       } catch (err) { toast(err.message, 4000); } finally { c.cerrar(); }
     } });
 
   const almacenamiento = h('p', { class: 'nota', text: 'Revisando almacenamiento…' });
+  const offline = h('p', { class: 'nota', text: 'Revisando modo sin internet…' });
+  (async () => {
+    try {
+      const r = await caches.match('./__estado-offline.json');
+      if (!r) { offline.textContent = '⚠️ Modo sin internet: aún no está listo. Abre la app con internet, espera unos segundos y vuelve a revisar.'; return; }
+      const e = await r.json();
+      offline.textContent = e.faltan.length
+        ? `⚠️ Modo sin internet incompleto: faltan ${e.faltan.length} de ${e.total} archivos (${e.faltan.join(', ')}). Revisa que estén subidos a GitHub.`
+        : `✅ Modo sin internet listo (${e.guardados} archivos guardados).`;
+    } catch { offline.textContent = '⚠️ No se pudo revisar el modo sin internet.'; }
+  })();
   (async () => {
     try {
       const persistente = await navigator.storage?.persisted?.();
@@ -49,18 +60,18 @@ export async function render(cont) {
       h('p', { text: 'Color principal' }), colores,
       h('label', { class: 'campo' }, h('span', {}, 'Tamaño de letra: ', valorLetra), letra)),
     h('section', { class: 'panel' }, h('h2', { text: 'Opciones' }),
-      interruptor('Buscar en línea si no está en el catálogo', 'buscarEnLinea', 'Usa YGOPRODeck (solo TCG) cuando hay internet. Solo se envía el Card Number o el passcode.'),
-      interruptor('Vibrar al guardar una carta', 'vibrar')),
+      interruptor('Permitir archivar colecciones', 'permitirArchivar', 'Deshabilitado por seguridad. Archivar oculta la colección pero no borra sus códigos.'),
+      interruptor('Vibrar al verificar un código', 'vibrar')),
     h('section', { class: 'panel' }, h('h2', { text: 'Respaldo de datos' }),
-      h('p', { class: 'nota', text: 'Tu inventario vive solo en este celular. Si borras los datos de Chrome o cambias de teléfono, se pierde. Haz un respaldo de vez en cuando y guárdalo en Drive o en tu PC.' }),
+      h('p', { class: 'nota', text: 'Tus datos viven solo en este celular. Si borras los datos de Chrome o cambias de teléfono, se pierden. Haz un respaldo de vez en cuando y guárdalo en Drive o en tu PC.' }),
       h('div', { class: 'fila-botones' },
         h('button', { class: 'btn primario', text: '⬇️ Exportar respaldo', onclick: async () => { await exportarRespaldo(); toast('Respaldo generado'); } }),
         h('button', { class: 'btn secundario', text: '⬆️ Importar respaldo', onclick: () => archivo.click() })),
-      archivo, almacenamiento),
+      archivo, almacenamiento, offline),
     h('section', { class: 'panel' }, h('h2', { text: 'Acerca de' }),
-      h('p', {}, h('strong', { text: APP_TITULO }), ` · versión ${APP_VERSION}`),
-      h('p', { class: 'nota', text: 'Inventario personal de cartas Yu-Gi-Oh! (TCG y OCG). Llave: Card Number + Edición + Rareza.' }),
-      h('p', { class: 'nota', text: 'Tu inventario vive solo en este celular. Internet se usa únicamente para descargar el catálogo y, si lo permites, para buscar una carta en línea.' }),
-      h('p', { class: 'nota', text: 'Datos de cartas: YAML Yugi y YGOPRODeck (proyectos comunitarios). Lector de texto: Tesseract.js (Apache 2.0). App no oficial, sin relación con Konami.' })),
+      h('p', {}, h('strong', { text: APP_NOMBRE }), ` · versión ${APP_VERSION}`),
+      h('p', { class: 'nota', text: 'Registra los códigos de lote de las bolsas Vuala por colección y avisa si un código ya se registró.' }),
+      h('p', { class: 'nota', text: `Códigos aceptados: de ${CODIGO_MIN} a ${CODIGO_MAX} letras y números.` }),
+      h('p', { class: 'nota', text: 'Funciona sin internet. No envía datos a ningún servidor. Lector de texto: Tesseract.js (licencia Apache 2.0).' })),
   );
 }
